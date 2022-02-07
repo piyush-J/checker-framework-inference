@@ -9,7 +9,6 @@ import checkers.inference.solver.util.FileUtils;
 import checkers.inference.solver.util.SolverEnvironment;
 import org.checkerframework.javacutil.BugInCF;
 import org.plumelib.util.Pair;
-import org.sat4j.core.VecInt;
 
 import javax.lang.model.element.AnnotationMirror;
 import java.io.File;
@@ -17,22 +16,21 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class GeneticMaxSatSolver extends MaxSatSolver {
 
     public int allSoftWeightsCount = 0;
     public long allSoftWeightsSum = 0;
-    public List<Integer> oldSoftWeights;
-    public List<Pair<Integer, Integer>> softWeightsCounter;
-    public long uniqueSoftWeightsCount = 0;
+    public List<Integer> oldSoftWeights = new LinkedList<>();
+    public List<Pair<Integer, Integer>> softWeightsCounter = new LinkedList<>();
+    public int uniqueSoftWeightsCount = 0;
     public String wcnfFileContent;
 
     public GeneticMaxSatSolver(SolverEnvironment solverEnvironment, Collection<Slot> slots,
@@ -63,7 +61,7 @@ public class GeneticMaxSatSolver extends MaxSatSolver {
         return superSolutions;
     }
 
-    public String changeSoftWeights(int[] newSoftWeights, boolean writeToFile){
+    public String changeSoftWeights(int[] newSoftWeights, List<Pair<Integer, Integer>> softWeightsCounter, String wcnfFileContent, boolean writeToFile){
         int oldTop = 0;
         int currentSoftWeightsSum = 0;
         HashMap<Integer, Integer> oldNewWeights = new HashMap<>();
@@ -76,7 +74,7 @@ public class GeneticMaxSatSolver extends MaxSatSolver {
             currentSoftWeightsSum += newSoftWeights[i]*softWeightPair.b;
         }
 
-        String[] wcnfContentSplit = this.wcnfFileContent.split("\n");
+        String[] wcnfContentSplit = wcnfFileContent.split("\n");
 
         StringBuilder WCNFModInput = new StringBuilder();
 
@@ -84,13 +82,11 @@ public class GeneticMaxSatSolver extends MaxSatSolver {
 
             String[] trimAndSplit = line.trim().split(" ");
 
-            int weight = Integer.parseInt(trimAndSplit[0]);
-
             if (trimAndSplit[0].equals("p")) {
                 oldTop = Integer.parseInt(trimAndSplit[4]);
                 trimAndSplit[4] = String.valueOf(currentSoftWeightsSum); // replacing the top value with current sum of soft weights
-            } else if (oldTop != 0 && weight < oldTop) {
-                trimAndSplit[0] = String.valueOf(oldNewWeights.get(weight));
+            } else if (oldTop != 0 && Integer.parseInt(trimAndSplit[0]) < oldTop) {
+                trimAndSplit[0] = String.valueOf(oldNewWeights.get(Integer.parseInt(trimAndSplit[0])));
             }
             WCNFModInput.append(String.join(" ", trimAndSplit));
             WCNFModInput.append("\n");
@@ -115,18 +111,17 @@ public class GeneticMaxSatSolver extends MaxSatSolver {
         for (String line : wcnfContentSplit) {
 
             String[] trimAndSplit = line.trim().split(" ");
-            int weightValue = Integer.parseInt(trimAndSplit[0]);
 
             if (trimAndSplit[0].equals("p")) {
                 top = Integer.parseInt(trimAndSplit[4]);
-            } else if (top != 0 && weightValue < top) {
-                allSoftWeights.add(weightValue);
+            } else if (top != 0 && Integer.parseInt(trimAndSplit[0]) < top) {
+                allSoftWeights.add(Integer.parseInt(trimAndSplit[0]));
             }
         }
 
         allSoftWeightsSum = allSoftWeights.stream().mapToLong(Integer::longValue).sum();
         allSoftWeightsCount = allSoftWeights.size();
-        uniqueSoftWeightsCount = allSoftWeights.stream().distinct().count();
+        uniqueSoftWeightsCount = (int) allSoftWeights.stream().distinct().count();
         oldSoftWeights = allSoftWeights.stream().distinct().collect(Collectors.toList());
 
         for (int weight: oldSoftWeights) {
