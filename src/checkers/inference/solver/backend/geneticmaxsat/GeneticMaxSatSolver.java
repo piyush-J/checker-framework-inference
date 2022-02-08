@@ -18,6 +18,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * GeneticMaxSatSolver adds support to use Genetic Algorithm to optimize the {@link checkers.inference.model.PreferenceConstraint} weights
+ *
+ */
 public abstract class GeneticMaxSatSolver extends MaxSatSolver {
 
     public int allSoftWeightsCount = 0;
@@ -101,6 +105,10 @@ public abstract class GeneticMaxSatSolver extends MaxSatSolver {
         }
     }
 
+    /**
+     * Override this method to declare an {@link io.jenetics.engine.Engine} builder and create a fitness function.
+     * For reference, please look at Universe type system.
+     */
     public abstract void fit();
 
 }
