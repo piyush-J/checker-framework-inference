@@ -95,8 +95,6 @@ public abstract class GeneticMaxSatSolver extends MaxSatSolver {
 
             String[] trimAndSplit = line.trim().split(" ");
 
-            System.out.println(Arrays.toString(trimAndSplit));
-
             if (trimAndSplit[0].equals("p")) {
                 top = Integer.parseInt(trimAndSplit[4]);
             } else if (top != 0 && Integer.parseInt(trimAndSplit[0]) < top) {
