@@ -369,8 +369,11 @@ public class DefaultSlotManager implements SlotManager {
         return nextId - 1;
     }
 
-    @Override
-    public SourceVariableSlot createSourceVariableSlot(AnnotationLocation location, TypeMirror type) {
+    private SourceVariableSlot createSourceVariableSlot(
+            AnnotationLocation location,
+            TypeMirror type,
+            boolean insertable
+    ) {
         AnnotationMirror defaultAnnotation = null;
         if (!InferenceOptions.makeDefaultsExplicit) {
             // retrieve the default annotation when needed
@@ -381,7 +384,7 @@ public class DefaultSlotManager implements SlotManager {
         if (location.getKind() == AnnotationLocation.Kind.MISSING) {
             if (InferenceMain.isHackMode()) {
                 //Don't cache slot for MISSING LOCATION. Just create a new one and return.
-                sourceVarSlot = new SourceVariableSlot(nextId(), location, type, defaultAnnotation, true);
+                sourceVarSlot = new SourceVariableSlot(nextId(), location, type, defaultAnnotation, insertable);
                 addToSlots(sourceVarSlot);
             } else {
                 throw new BugInCF("Creating SourceVariableSlot on MISSING_LOCATION!");
@@ -391,11 +394,23 @@ public class DefaultSlotManager implements SlotManager {
             int id = locationCache.get(location);
             sourceVarSlot = (SourceVariableSlot) getSlot(id);
         } else {
-            sourceVarSlot = new SourceVariableSlot(nextId(), location, type, defaultAnnotation, true);
+            sourceVarSlot = new SourceVariableSlot(nextId(), location, type, defaultAnnotation, insertable);
             addToSlots(sourceVarSlot);
             locationCache.put(location, sourceVarSlot.getId());
         }
         return sourceVarSlot;
+    }
+
+    @Override
+    public SourceVariableSlot createSourceVariableSlot(AnnotationLocation location, TypeMirror type) {
+        return createSourceVariableSlot(location, type, true);
+    }
+
+    @Override
+    public VariableSlot createPolymorphicInstanceSlot(AnnotationLocation location, TypeMirror type) {
+        // TODO: For now, a polymorphic instance slot is just equivalent to a non-insertable
+        //  source variable slot. We may consider changing this implementation later.
+        return createSourceVariableSlot(location, type, false);
     }
 
     /**
