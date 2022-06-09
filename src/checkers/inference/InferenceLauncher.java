@@ -188,6 +188,7 @@ public class InferenceLauncher {
         addIfNotNull("--cfArgs", InferenceOptions.cfArgs, argList);
 
         addIfTrue("--hacks", InferenceOptions.hacks, argList);
+        addIfTrue("--writeDefaultAnnotations", InferenceOptions.writeDefaultAnnotations, argList);
 
         Mode mode = Mode.valueOf(InferenceOptions.mode);
         if (InferenceOptions.makeDefaultsExplicit
@@ -195,6 +196,9 @@ public class InferenceLauncher {
             // Two conditions have to be met to make defaults explicit:
             // 1. the command-line flag `makeDefaultsExplicit` is provided
             // 2. the inference solution will be written back to the source code (roundtrip `mode`)
+            if (InferenceOptions.writeDefaultAnnotations) {
+                outStream.println("writeDefaultAnnotations will have no effect when makeDefaultsExplicit is true");
+            }
             argList.add("--makeDefaultsExplicit");
         }
 
