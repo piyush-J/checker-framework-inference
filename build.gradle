@@ -21,6 +21,20 @@ ext {
     isJava8 = JavaVersion.current() == JavaVersion.VERSION_1_8
 
     errorproneJavacVersion = '9+181-r4173-1'
+
+    // Keep in sync with checker-framework/build.gradle.
+    // TODO: find a way to directly use that variable.
+    compilerArgsForRunningCF = [
+            "--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+            "--add-exports", "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+            "--add-exports", "jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+            "--add-exports", "jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+            "--add-exports", "jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED",
+            "--add-exports", "jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
+            "--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+            "--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+            "--add-opens", "jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED",
+    ]
 }
 
 println '===================================='
@@ -127,6 +141,7 @@ test {
         // Without this, the test throw "java.lang.OutOfMemoryError: Java heap space"
         // Corresponding pull request: https://github.com/opprop/checker-framework-inference/pull/263
         forkEvery(1)
+        jvmArgs += compilerArgsForRunningCF
     }
 
     testLogging {
