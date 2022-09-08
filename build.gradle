@@ -69,7 +69,7 @@ dependencies {
 
     // AFU is an "includedBuild" imported in settings.gradle, so the version number doesn't matter.
     // https://docs.gradle.org/current/userguide/composite_builds.html#settings_defined_composite
-    implementation('org.checkerframework:annotation-file-utilities:*') {
+    implementation('io.github.eisop:annotation-file-utilities:*') {
         exclude group: 'com.google.errorprone', module: 'javac'
     }
 
