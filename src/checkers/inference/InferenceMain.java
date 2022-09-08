@@ -167,7 +167,7 @@ public class InferenceMain {
                 "-XDignore.symbol.file",
                 "-Awarns"));
 
-        if (SystemUtil.getJreVersion() == 8) {
+        if (SystemUtil.jreVersion == 8) {
             checkerFrameworkArgs.addAll(Arrays.asList("-source", "8", "-target", "8"));
         }
 

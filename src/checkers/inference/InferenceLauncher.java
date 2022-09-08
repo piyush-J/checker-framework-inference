@@ -166,7 +166,7 @@ public class InferenceLauncher {
             argList.add("-Xbootclasspath/p:" + bcp);
         }
 
-        if (SystemUtil.getJreVersion() > 8) {
+        if (SystemUtil.jreVersion > 8) {
             // Keep in sync with build.gradle
             argList.addAll(Arrays.asList("--add-exports", "jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
                     "--add-exports", "jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
