@@ -51,8 +51,8 @@ import checkers.inference.model.Slot;
 import checkers.inference.model.SourceVariableSlot;
 import checkers.inference.model.VariableSlot;
 import checkers.inference.qual.VarAnnot;
-import scenelib.annotations.io.ASTIndex;
-import scenelib.annotations.io.ASTRecord;
+import org.checkerframework.afu.scenelib.io.ASTIndex;
+import org.checkerframework.afu.scenelib.io.ASTRecord;
 
 /**
  * The default implementation of SlotManager.

@@ -24,9 +24,9 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.util.TreePath;
 
-import scenelib.annotations.io.ASTIndex;
-import scenelib.annotations.io.ASTPath;
-import scenelib.annotations.io.ASTRecord;
+import org.checkerframework.afu.scenelib.io.ASTIndex;
+import org.checkerframework.afu.scenelib.io.ASTPath;
+import org.checkerframework.afu.scenelib.io.ASTRecord;
 
 /**
  * ASTPathUtil is a collection of utilities to create ASTRecord for existing trees, as well

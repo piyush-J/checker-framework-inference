@@ -62,9 +62,9 @@ import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.tree.JCTree;
 
-import scenelib.annotations.io.ASTIndex;
-import scenelib.annotations.io.ASTPath;
-import scenelib.annotations.io.ASTRecord;
+import org.checkerframework.afu.scenelib.io.ASTIndex;
+import org.checkerframework.afu.scenelib.io.ASTPath;
+import org.checkerframework.afu.scenelib.io.ASTRecord;
 import checkers.inference.model.AnnotationLocation;
 import checkers.inference.model.AnnotationLocation.AstPathLocation;
 import checkers.inference.model.AnnotationLocation.ClassDeclLocation;
