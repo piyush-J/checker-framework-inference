@@ -1,6 +1,6 @@
 package checkers.inference;
 
-import scenelib.annotations.io.ASTRecord;
+import org.checkerframework.afu.scenelib.io.ASTRecord;
 import checkers.inference.model.AnnotationLocation;
 import checkers.inference.model.AnnotationLocation.AstPathLocation;
 import checkers.inference.model.SourceVariableSlot;

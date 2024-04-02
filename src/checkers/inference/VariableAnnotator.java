@@ -13,6 +13,7 @@ import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedUnionTyp
 import org.checkerframework.framework.type.AnnotatedTypeMirror.AnnotatedWildcardType;
 import org.checkerframework.framework.type.visitor.AnnotatedTypeScanner;
 import org.checkerframework.javacutil.AnnotationBuilder;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.AnnotationUtils;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.BugInCF;
@@ -62,9 +63,9 @@ import com.sun.tools.javac.code.Symbol.ClassSymbol;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.tree.JCTree;
 
-import scenelib.annotations.io.ASTIndex;
-import scenelib.annotations.io.ASTPath;
-import scenelib.annotations.io.ASTRecord;
+import org.checkerframework.afu.scenelib.io.ASTIndex;
+import org.checkerframework.afu.scenelib.io.ASTPath;
+import org.checkerframework.afu.scenelib.io.ASTRecord;
 import checkers.inference.model.AnnotationLocation;
 import checkers.inference.model.AnnotationLocation.AstPathLocation;
 import checkers.inference.model.AnnotationLocation.ClassDeclLocation;
@@ -134,7 +135,7 @@ public class VariableAnnotator extends AnnotatedTypeScanner<Void,Tree> {
      * methodCall -> variable created to represent Poly qualifiers
      * See InferenceQualifierPolymorphism.
      */
-    private final Map<Tree, SourceVariableSlot> treeToPolyVar;
+    private final Map<Tree, VariableSlot> treeToPolyVar;
 
     // An instance of @VarAnnot
     private final AnnotationMirror varAnnot;
@@ -206,10 +207,10 @@ public class VariableAnnotator extends AnnotatedTypeScanner<Void,Tree> {
      * one and return it, if we haven't created one for the given tree. see InferenceQualifierPolymorphism
      * @return The Variable representing PolymorphicQualifier for the given tree
      */
-    public SourceVariableSlot getOrCreatePolyVar(Tree tree) {
-        SourceVariableSlot polyVar = treeToPolyVar.get(tree);
+    public VariableSlot getOrCreatePolyVar(Tree tree) {
+        VariableSlot polyVar = treeToPolyVar.get(tree);
         if (polyVar == null) {
-            polyVar = slotManager.createSourceVariableSlot(treeToLocation(tree), TreeUtils.typeOf(tree));
+            polyVar = slotManager.createPolymorphicInstanceSlot(treeToLocation(tree), TreeUtils.typeOf(tree));
             treeToPolyVar.put(tree, polyVar);
         }
 
@@ -239,7 +240,7 @@ public class VariableAnnotator extends AnnotatedTypeScanner<Void,Tree> {
 
         final Pair<Slot, Set<? extends AnnotationMirror>> varATMPair = Pair
                 .<Slot, Set<? extends AnnotationMirror>> of(varSlot,
-                AnnotationUtils.createAnnotationSet());
+                        new AnnotationMirrorSet());
         treeToVarAnnoPair.put(tree, varATMPair);
         logger.fine("Created variable for tree:\n" + varSlot.getId() + " => " + tree);
         return varSlot;
@@ -270,7 +271,7 @@ public class VariableAnnotator extends AnnotatedTypeScanner<Void,Tree> {
 //
 //            }
 //        }
-        Set<AnnotationMirror> annotations = AnnotationUtils.createAnnotationSet();
+        Set<AnnotationMirror> annotations = new AnnotationMirrorSet();
         annotations.add(constantSlot.getValue());
         final Pair<Slot, Set<? extends AnnotationMirror>> varATMPair = Pair
                 .<Slot, Set<? extends AnnotationMirror>> of(constantSlot,
@@ -518,7 +519,7 @@ public class VariableAnnotator extends AnnotatedTypeScanner<Void,Tree> {
 
             final Pair<Slot, Set<? extends AnnotationMirror>> varATMPair = Pair
                     .of(variable,
-                    AnnotationUtils.createAnnotationSet());
+                    new AnnotationMirrorSet());
 
             treeToVarAnnoPair.put(tree, varATMPair);
         }

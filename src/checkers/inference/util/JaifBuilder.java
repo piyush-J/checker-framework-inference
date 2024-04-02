@@ -1,8 +1,8 @@
 package checkers.inference.util;
 
-import scenelib.annotations.io.ASTRecord;
-import scenelib.annotations.io.ASTPath;
-import scenelib.annotations.io.ASTPath.ASTEntry;
+import org.checkerframework.afu.scenelib.io.ASTRecord;
+import org.checkerframework.afu.scenelib.io.ASTPath;
+import org.checkerframework.afu.scenelib.io.ASTPath.ASTEntry;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

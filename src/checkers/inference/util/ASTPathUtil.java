@@ -24,9 +24,9 @@ import com.sun.source.tree.Tree;
 import com.sun.source.tree.Tree.Kind;
 import com.sun.source.util.TreePath;
 
-import scenelib.annotations.io.ASTIndex;
-import scenelib.annotations.io.ASTPath;
-import scenelib.annotations.io.ASTRecord;
+import org.checkerframework.afu.scenelib.io.ASTIndex;
+import org.checkerframework.afu.scenelib.io.ASTPath;
+import org.checkerframework.afu.scenelib.io.ASTRecord;
 
 /**
  * ASTPathUtil is a collection of utilities to create ASTRecord for existing trees, as well
@@ -207,10 +207,10 @@ public class ASTPathUtil {
                 return null;
             }
 
-            if (!AnnotatedTypes.isExplicitlySuperBounded(type)) {
+            if (!AnnotatedTypes.hasExplicitSuperBound(type)) {
                 mapping.put(type.getSuperBound(), current);
 
-                if (AnnotatedTypes.isExplicitlyExtendsBounded(type)) {
+                if (AnnotatedTypes.hasExplicitExtendsBound(type)) {
                     final ASTRecord toBound = extendParent(current, Kind.EXTENDS_WILDCARD, ASTPath.BOUND, 0);
                     visit(type.getExtendsBound(), toBound);
                 } else {

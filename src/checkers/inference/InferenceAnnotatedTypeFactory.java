@@ -2,6 +2,7 @@ package checkers.inference;
 
 import checkers.inference.model.ConstantSlot;
 import checkers.inference.model.Slot;
+import com.sun.source.util.TreePath;
 import org.checkerframework.common.basetype.BaseAnnotatedTypeFactory;
 import org.checkerframework.framework.flow.CFAbstractAnalysis;
 import org.checkerframework.framework.flow.CFAnalysis;
@@ -23,10 +24,10 @@ import org.checkerframework.framework.type.typeannotator.ListTypeAnnotator;
 import org.checkerframework.framework.type.typeannotator.TypeAnnotator;
 import org.checkerframework.framework.type.visitor.AnnotatedTypeScanner;
 import org.checkerframework.framework.util.AnnotatedTypes;
-import org.checkerframework.framework.util.AnnotationMirrorSet;
 import org.checkerframework.framework.util.defaults.QualifierDefaults;
 import org.checkerframework.framework.util.dependenttypes.DependentTypesHelper;
 import org.checkerframework.javacutil.AnnotationBuilder;
+import org.checkerframework.javacutil.AnnotationMirrorSet;
 import org.checkerframework.javacutil.BugInCF;
 import org.checkerframework.javacutil.ElementUtils;
 import org.checkerframework.javacutil.Pair;
@@ -149,7 +150,12 @@ public class InferenceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         existentialInserter = new ExistentialVariableInserter(slotManager, constraintManager,
                                                               realTop, varAnnot, variableAnnotator);
 
-        inferencePoly = new InferenceQualifierPolymorphism(slotManager, variableAnnotator, this, varAnnot);
+        inferencePoly = new InferenceQualifierPolymorphism(
+                slotManager,
+                variableAnnotator,
+                this,
+                realTypeFactory,
+                varAnnot);
 
         constantToVariableAnnotator = new ConstantToVariableAnnotator(realTop, varAnnot);
         // Every subclass must call postInit!
@@ -308,7 +314,7 @@ public class InferenceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     @Override
     public ParameterizedExecutableType methodFromUse(final MethodInvocationTree methodInvocationTree) {
         assert methodInvocationTree != null : "MethodInvocationTree in methodFromUse was null.  " +
-                                              "Current path:\n" + this.visitorState.getPath();
+                                              "Current path:\n" + getVisitorTreePath();
         final ExecutableElement methodElem = TreeUtils.elementFromUse(methodInvocationTree);
 
         // TODO: Used in comb constraints, going to leave it in to ensure the element has been visited
@@ -336,8 +342,19 @@ public class InferenceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
             viewpointAdapter.viewpointAdaptMethod(receiverType, methodElem, methodOfReceiver);
         }
         ParameterizedExecutableType mType = substituteTypeArgs(methodInvocationTree, methodElem, methodOfReceiver);
-
         AnnotatedExecutableType method = mType.executableType;
+
+        // Take adapt parameter logic from AnnotatedTypeFactory#methodFromUse to
+        // InferenceAnnotatedTypeFactory#methodFromUse.
+        // Store varargType before calling setParameterTypes, otherwise we may lose the varargType
+        // as it is the last element of the original parameterTypes.
+        method.computeVarargType();
+        // Adapt parameters, which makes parameters and arguments be the same size for later
+        // checking.
+        List<AnnotatedTypeMirror> parameters =
+                AnnotatedTypes.adaptParameters(this, method, methodInvocationTree.getArguments());
+        method.setParameterTypes(parameters);
+
         inferencePoly.replacePolys(methodInvocationTree, method);
 
         if (methodInvocationTree.getKind() == Tree.Kind.METHOD_INVOCATION &&
@@ -358,33 +375,30 @@ public class InferenceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     };
 
     /**
-     * TODO: Similar but not the same as AnnotatedTypeFactory.constructorFromUse with space set aside from
-     * TODO: comb constraints, track down the differences with constructorFromUse
-     * Note: super() and this() calls
+     * This method is similar to the one in its superclass AnnotatedTypeFactory, but it has additional logic to handle
+     * constraints in the context of type inference.
      * @see org.checkerframework.checker.type.AnnotatedTypeFactory#constructorFromUse(com.sun.source.tree.NewClassTree)
      *
      * @param newClassTree
-     * @return
+     * @return a ParameterizedExecutableType
      */
+
     @Override
     public ParameterizedExecutableType constructorFromUse(final NewClassTree newClassTree) {
         assert newClassTree != null : "NewClassTree was null when attempting to get constructorFromUse. " +
-                                      "Current path:\n" + this.visitorState.getPath();
+                                      "Current path:\n" + getVisitorTreePath();
 
-        final ExecutableElement constructorElem = TreeUtils.constructor(newClassTree);;
-        final AnnotatedTypeMirror constructorReturnType = fromNewClass(newClassTree);
+        final ExecutableElement constructorElem = TreeUtils.elementFromUse(newClassTree);
+        // TODO Super seems calling the same thing. Add a note for future clear up.
+        // Add equality constraints to return type by calling addComputedTypeAnnotations.
+        AnnotatedDeclaredType constructorReturnType =
+                (AnnotatedDeclaredType) toAnnotatedType(TreeUtils.typeOf(newClassTree), false);
         addComputedTypeAnnotations(newClassTree, constructorReturnType);
 
-        final AnnotatedExecutableType constructorType = AnnotatedTypes.asMemberOf(types, this, constructorReturnType, constructorElem);
-
-        if (viewpointAdapter != null) {
-            viewpointAdapter.viewpointAdaptConstructor(constructorReturnType, constructorElem, constructorType);
-        }
-
-        ParameterizedExecutableType substitutedPair = substituteTypeArgs(newClassTree, constructorElem, constructorType);
+        ParameterizedExecutableType result = super.constructorFromUse(newClassTree);
+        ParameterizedExecutableType substitutedPair = substituteTypeArgs(newClassTree, constructorElem, result.executableType);
         inferencePoly.replacePolys(newClassTree, substitutedPair.executableType);
 
-        // TODO: Should we be doing asMemberOf like super?
         return substitutedPair;
     }
 
@@ -536,7 +550,6 @@ public class InferenceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 treeAnnotator.visit(declaration, type);
             } else {
                 bytecodeTypeAnnotator.annotate(element, type);
-
             }
         }
     }
@@ -550,7 +563,6 @@ public class InferenceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
         compilationUnitsHandled += 1;
         this.realTypeFactory.setRoot( root );
         this.variableAnnotator.clearTreeInfo();
-        this.slotManager.setRoot(root);
         super.setRoot(root);
     }
 
@@ -565,15 +577,28 @@ public class InferenceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
      * @return the singleton set with the {@link VarAnnot} on the class bound
      */
     @Override
-    public Set<AnnotationMirror> getTypeDeclarationBounds(TypeMirror type) {
+    public AnnotationMirrorSet getTypeDeclarationBounds(TypeMirror type) {
         final TypeElement elt = (TypeElement) getProcessingEnv().getTypeUtils().asElement(type);
         AnnotationMirror vAnno = variableAnnotator.getClassDeclVarAnnot(elt);
         if (vAnno != null) {
-            return Collections.singleton(vAnno);
+            return AnnotationMirrorSet.singleton(vAnno);
+        }
+
+        // This is to handle the special case of anonymous classes when the super class (or interface)
+        // identifier is explicit annotated, e.g.
+        //      A a1 = new @OsUntrusted A() {};
+        // In such cases, the declaration bound of the anonymous class is the explicit annotation on
+        // the super class (or interface) identifier.
+        final List<? extends AnnotationMirror> annos = type.getAnnotationMirrors();
+        AnnotationMirror realAnno = qualHierarchy.findAnnotationInHierarchy(annos, realTop);
+        if (realAnno != null) {
+            Slot slot = slotManager.getSlot(realAnno);
+            vAnno = slotManager.getAnnotation(slot);
+            return AnnotationMirrorSet.singleton(vAnno);
         }
 
         // If the declaration bound of the underlying type is not cached, use default
-        return (Set<AnnotationMirror>) getDefaultTypeDeclarationBounds();
+        return (AnnotationMirrorSet) getDefaultTypeDeclarationBounds();
     }
 
     /**
@@ -588,5 +613,6 @@ public class InferenceAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
     public AnnotatedTypeMirror getTypeOfExtendsImplements(Tree clause) {
         return getAnnotatedTypeFromTypeTree(clause);
     }
+
 }
 
